@@ -1,7 +1,18 @@
 #include "thread_pool.h"
+
+struct ThreadWorkerData
+{
+    std::function<void()> func;
+    std::mutex m;
+    std::condition_variable cond;
+    bool started;
+    bool finished;
+    bool running;
+};
+
 using namespace std;
 
-void _global_thread_worker_main(ThreadWorkerData* ptdd)
+static void _global_thread_worker_main(ThreadWorkerData* ptdd)
 {
     unique_lock<mutex> ulk(ptdd->m);
     while(ptdd->running)

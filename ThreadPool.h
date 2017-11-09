@@ -5,26 +5,20 @@
 #include <mutex>
 #include <condition_variable>
 
-struct ThreadWorkerData
-{
-    std::function<void()> func;
-    std::mutex m;
-    std::condition_variable cond;
-    bool started;
-    bool finished;
-    bool running;
-};
-
-void _global_thread_worker_main(ThreadWorkerData* ptdd);
-
+struct ThreadWorkerData;
 
 class ThreadPool
 {
 public:
     ThreadPool(int n);
+    /// NonCopyable, NonMovable.
+    ThreadPool(const ThreadPool&)=delete;
+    ThreadPool& operator = (const ThreadPool&)=delete;
+    ThreadPool(ThreadPool&&)=delete;
+    ThreadPool& operator = (ThreadPool&&)=delete;
     ~ThreadPool();
 
-    int start(const std::function<void()>& func);
+    int start(const std::function<void()>&);
 private:
     std::vector<ThreadWorkerData*> dvec;
     std::vector<std::thread*> tvec;
