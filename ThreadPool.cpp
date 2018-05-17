@@ -1,5 +1,11 @@
 #include "ThreadPool.h"
 
+#ifdef HCDEBUG
+#define dprintf(fmt,...) printf(fmt,__VA_ARGS_)
+#else
+#define dprintf(fmt,...)
+#endif
+
 struct ThreadWorkerData
 {
     std::function<void()> func;
@@ -14,13 +20,18 @@ using namespace std;
 
 static void _global_thread_worker_main(ThreadWorkerData* ptdd)
 {
-    unique_lock<mutex> ulk(ptdd->m);
+    thread_local unique_lock<mutex> ulk(ptdd->m);
     while(ptdd->running)
     {
+		dprintf("ThreadPoolWorker: %p: Started\n", ptdd);
         ptdd->started=true;
         ptdd->func();
         ptdd->finished=true;
+		dprintf("ThreadPoolWorker: %p: Job Finished. Waiting...\n", ptdd);
+
         ptdd->cond.wait(ulk); /// wait for new work. (will unlock ptdd->m while waiting...)
+
+		dprintf("ThreadPoolWorker: %p: Notified.\n", ptdd);
     }
 }
 
@@ -66,6 +77,8 @@ ThreadPool::~ThreadPool()
 
 int ThreadPool::start(const function<void()>& func)
 {
+	dprintf("ThreadPool (%p): left:%d busy:%d\n", this, left, busy);
+
     if(left>0)
     {
         bool done=false;
